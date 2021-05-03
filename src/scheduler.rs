@@ -9,7 +9,6 @@ pub fn start(app_state: &'static AppState) {
     info!("Starting scheduler...");
     let mut scheduler = Scheduler::new();
     scheduler.every(1.seconds()).run(|| {
-      
         info!("Scheduled task");
     });
     //let thread_handle = scheduler.watch_thread(Duration::from_millis(100));

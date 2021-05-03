@@ -1,8 +1,8 @@
 use actix_web::web;
 
+mod jwks;
 mod login;
 mod precheck;
-mod jwks;
 
 pub fn register(app: &mut web::ServiceConfig) {
     app.service(web::resource("/precheck").route(web::post().to(precheck::execute)));

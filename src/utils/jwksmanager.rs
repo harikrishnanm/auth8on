@@ -143,7 +143,7 @@ impl JWK {
 pub async fn init_jwk(app_state: &AppState) {
     info!("Checking JWKS");
     let mongo_db = app_state.clone().mongo_db;
-    let jwks_coll: Collection = mongo_db.collection(JWKS);
+    let jwks_coll: Collection<JWKDoc> = mongo_db.collection_with_type(JWKS);
     let jwks_count: i64 = jwks_coll.count_documents(None, None).await.unwrap();
     trace!("JWKS collection has {} docs", jwks_count);
     if jwks_count == 0 {
@@ -155,9 +155,7 @@ pub async fn init_jwk(app_state: &AppState) {
                     created_date: now,
                     current: true,
                 };
-                let serialized_doc = bson::to_bson(&jwk_doc).unwrap();
-                let doc = serialized_doc.as_document().unwrap();
-                let _ = jwks_coll.insert_one(doc.to_owned(), None).await;
+                let _ = jwks_coll.insert_one(jwk_doc, None).await;
             }
             Err(_e) => {}
         };

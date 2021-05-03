@@ -60,9 +60,9 @@ async fn main() -> std::io::Result<()> {
     let app_state: AppState = AppState { mongo_db: mongo_db };
 
     utils::jwksmanager::init_jwk(&app_state).await;
-   // thread::spawn(|| {
-   //     scheduler::start(&app_state);
-   // });
+    // thread::spawn(|| {
+    //     scheduler::start(&app_state);
+    // });
 
     HttpServer::new(move || {
         App::new()
