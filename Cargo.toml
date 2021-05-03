@@ -1,0 +1,27 @@
+[package]
+name = "auth8on"
+version = "0.0.1"
+authors = ["Harikrishnan M <hari@dmartlabs.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mongodb = "1.2.1"
+actix-web = "3.3.2"
+actix-web-validator = "2.0.3"
+actix-http = "2.2.0"
+dotenv = "0.15.0"
+env_logger ="0.8.3"
+log="0.4.14"
+num_cpus ="1.13.0"
+serde ="1.0.125"
+serde_derive="1.0.125"
+validator="0.13.0"
+validator_derive="0.13.0"
+openssl = "0.10.34"
+data-encoding="2.3.2"
+uuid = {version = "0.8.2", features = ["serde", "v4"]}
+clokwerk = "0.3.4"
+chrono = {version = "0.4.19", features = ["serde"]}
+bson = "1.2.2"
