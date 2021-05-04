@@ -9,16 +9,16 @@ use actix_web_validator::{error::Error::Validate, JsonConfig};
 use dotenv::dotenv;
 use env_logger::Env;
 use log::{error, info};
-use mongodb::Database;
+use mongodb::sync::Database;
 use std::thread;
 
 mod config;
+mod constants;
 mod db;
 mod routes;
-mod scheduler;
 mod utils;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AppState {
     mongo_db: Database,
 }
@@ -59,10 +59,11 @@ async fn main() -> std::io::Result<()> {
 
     let app_state: AppState = AppState { mongo_db: mongo_db };
 
-    utils::jwksmanager::init_jwk(&app_state).await;
-    // thread::spawn(|| {
-    //     scheduler::start(&app_state);
-    // });
+    utils::jwksmanager::init_jwk(&app_state.clone()).await;
+    let a: AppState = app_state.clone();
+    thread::spawn(move || {
+        utils::keyrotator::start(a);
+    });
 
     HttpServer::new(move || {
         App::new()

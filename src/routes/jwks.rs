@@ -1,10 +1,8 @@
 use actix_web::{web, HttpResponse, Responder};
-use futures::stream::StreamExt;
-use log::{debug, trace};
+use log::{debug, info, trace};
 use mongodb::{
-    bson::{doc, Document},
-    error::Result,
-    Collection, Cursor, Database,
+    bson::doc,
+    sync::{Collection, Cursor, Database},
 };
 use serde::{Deserialize, Serialize};
 
@@ -43,10 +41,10 @@ pub struct JWKS {
 impl JWKS {
     pub async fn build(mongo_db: &Database) -> JWKS {
         let jwks_coll: Collection<JWKDoc> = mongo_db.collection_with_type(JWKS);
-        let filter = doc! {"current": true};
-        let mut cursor: Cursor<JWKDoc> = jwks_coll.find(filter, None).await.unwrap();
+        let mut cursor: Cursor<JWKDoc> = jwks_coll.find(None, None).unwrap();
         let mut jwk_list: Vec<PublicJWK> = Vec::new();
-        while let Some(doc) = cursor.next().await {
+        debug!("Got cursor to jwks");
+        while let Some(doc) = cursor.next() {
             let jwk_doc: JWKDoc = doc.unwrap();
             let jwk: JWK = jwk_doc.jwk;
             let public_jwk: PublicJWK = PublicJWK {
@@ -60,11 +58,13 @@ impl JWKS {
             jwk_list.push(public_jwk);
         }
         let jwks = JWKS { keys: jwk_list };
+        trace!("JWKS {:?}", jwks);
         jwks
     }
 }
 
 pub async fn execute(app_state: web::Data<AppState>) -> impl Responder {
+    info!("Getting jwks from db");
     let mongo_db = &app_state.mongo_db;
     let res = JWKS::build(mongo_db).await;
     HttpResponse::Ok().json(res)

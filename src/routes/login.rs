@@ -1,6 +1,6 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder};
 use log::{debug, trace};
-use mongodb::Database;
+use mongodb::sync::Database;
 use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
 

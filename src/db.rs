@@ -1,5 +1,9 @@
-use log::{error, info, trace};
-use mongodb::{bson::doc, error::Error, options::ClientOptions, Client, Database};
+use log::{error, info};
+use mongodb::{
+    bson::doc,
+    error::Error,
+    sync::{Client, Database},
+};
 use std::result::Result;
 
 use std::env;
@@ -14,6 +18,8 @@ pub async fn init() -> Result<Database, Error> {
             if !url.contains("appName") {
                 url.push_str("&appName=");
                 url.push_str(CARGO_PKG_NAME);
+                url.push_str("-");
+                url.push_str(CARGO_PKG_VERSION);
             }
             url
         }
@@ -28,27 +34,16 @@ pub async fn init() -> Result<Database, Error> {
         Err(e) => panic!("MONGO_DB_NAME env variable not set {}", e),
     };
 
-    match Client::with_uri_str(&mongo_url).await {
-        Ok(client) => {
-            match client
-                .database("admin")
-                .run_command(doc! {"ping": 1}, None)
-                .await
-            {
-                Ok(_) => {
-                    let db = client.database(&mongo_db_name);
+    match Client::with_uri_str(&mongo_url) {
+        Ok(client) => match client.database("admin").run_command(doc! {"ping": 1}, None) {
+            Ok(_) => {
+                let db = client.database(&mongo_db_name);
 
-                    info!("DB Initialized");
-                    Ok(db)
-                }
-                Err(e) => Err(e),
+                info!("DB Initialized");
+                Ok(db)
             }
-        }
+            Err(e) => Err(e),
+        },
         Err(e) => Err(e),
     }
-}
-
-async fn check_and_create_collections(mongo_db: &Database) {
-    let collections = mongo_db.list_collections(None, None).await;
-    trace!("{:?}", collections);
 }

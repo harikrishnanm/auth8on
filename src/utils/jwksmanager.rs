@@ -2,7 +2,7 @@ use chrono::naive::NaiveDateTime;
 use chrono::prelude::Utc;
 use data_encoding::BASE64URL_NOPAD;
 use log::{error, info, trace};
-use mongodb::{bson::bson, Collection};
+use mongodb::sync::Collection;
 use openssl::rsa::Rsa;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -62,6 +62,19 @@ pub struct JWK {
 
     #[serde(rename = "kid")]
     pub kid: String,
+}
+
+impl JWKDoc {
+    pub fn build(jwk: JWK) -> JWKDoc {
+        info!("Generating JWKDoc");
+        let now = Utc::now().naive_utc();
+        let jwk_doc = JWKDoc {
+            jwk: jwk,
+            created_date: now,
+            current: true,
+        };
+        jwk_doc
+    }
 }
 
 impl JWK {
@@ -144,22 +157,23 @@ pub async fn init_jwk(app_state: &AppState) {
     info!("Checking JWKS");
     let mongo_db = app_state.clone().mongo_db;
     let jwks_coll: Collection<JWKDoc> = mongo_db.collection_with_type(JWKS);
-    let jwks_count: i64 = jwks_coll.count_documents(None, None).await.unwrap();
+    let jwks_count: i64 = jwks_coll.count_documents(None, None).unwrap();
     trace!("JWKS collection has {} docs", jwks_count);
     if jwks_count == 0 {
         match JWK::build() {
             Ok(jwk) => {
-                let now = Utc::now().naive_utc();
-                let jwk_doc = JWKDoc {
-                    jwk: jwk,
-                    created_date: now,
-                    current: true,
-                };
-                let _ = jwks_coll.insert_one(jwk_doc, None).await;
+                let jwk_doc = JWKDoc::build(jwk);
+                match jwks_coll.insert_one(jwk_doc, None) {
+                    Ok(result) => {
+                        info!("Successfully stored JWKDoc");
+                        trace!("Result {:?}", result);
+                    }
+                    Err(e) => {
+                        error!("Error storing JWKDoc {:?}", e);
+                    }
+                }
             }
             Err(_e) => {}
         };
     }
 }
-
-pub fn check_jwk(app_state: &AppState) {}
