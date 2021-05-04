@@ -5,13 +5,13 @@ use mongodb::{
     sync::{Collection, Cursor, Database},
 };
 use serde::{Deserialize, Serialize};
-
+use cached::{Cached, SizedCache, UnboundCache};
 use crate::utils::jwksmanager::{JWKDoc, JWK};
 use crate::AppState;
 
 const JWKS: &str = "JWKS";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PublicJWK {
     #[serde(rename = "n")]
     pub n: String,
@@ -32,14 +32,15 @@ pub struct PublicJWK {
     pub jwk_use: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JWKS {
     #[serde(rename = "keys")]
     pub keys: Vec<PublicJWK>,
 }
 
 impl JWKS {
-    pub async fn build(mongo_db: &Database) -> JWKS {
+    fn build(mongo_db: &Database) -> JWKS {
+        info!("Getting jwks from db");
         let jwks_coll: Collection<JWKDoc> = mongo_db.collection_with_type(JWKS);
         let mut cursor: Cursor<JWKDoc> = jwks_coll.find(None, None).unwrap();
         let mut jwk_list: Vec<PublicJWK> = Vec::new();
@@ -64,8 +65,8 @@ impl JWKS {
 }
 
 pub async fn execute(app_state: web::Data<AppState>) -> impl Responder {
-    info!("Getting jwks from db");
+    info!("Got jwks request");
     let mongo_db = &app_state.mongo_db;
-    let res = JWKS::build(mongo_db).await;
+    let res = JWKS::build(mongo_db);
     HttpResponse::Ok().json(res)
 }
