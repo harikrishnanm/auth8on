@@ -2,65 +2,37 @@ use chrono::naive::NaiveDateTime;
 use chrono::prelude::Utc;
 use data_encoding::BASE64URL_NOPAD;
 use log::{error, info, trace};
-use mongodb::sync::Collection;
+use diesel::{Queryable, Insertable};
 use openssl::rsa::Rsa;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::schema::jwks;
+
 
 const JWKS: &str = "JWKS";
 const BITS: u32 = 2048;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JWKDoc {
-    #[serde(rename = "createdDate")]
-    pub created_date: NaiveDateTime,
 
-    #[serde(rename = "current")]
-    pub current: bool,
 
-    #[serde(rename = "keyPair")]
-    pub jwk: JWK,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Queryable, Insertable)]
+#[table_name="jwks"]
 pub struct JWK {
-    #[serde(rename = "p")]
+    pub created: NaiveDateTime,
+    pub current: bool,
     pub p: String,
-
-    #[serde(rename = "q")]
     pub q: String,
-
-    #[serde(rename = "d")]
     pub d: String,
-
-    #[serde(rename = "qi")]
     pub qi: String,
-
-    #[serde(rename = "dp")]
     pub dp: String,
-
-    #[serde(rename = "dq")]
     pub dq: String,
-
-    #[serde(rename = "n")]
     pub n: String,
-
-    #[serde(rename = "kty")]
     pub kty: String,
-
-    #[serde(rename = "e")]
     pub e: String,
-
-    #[serde(rename = "use")]
     pub jwk_use: String,
-
-    #[serde(rename = "alg")]
     pub alg: String,
-
-    #[serde(rename = "kid")]
     pub kid: String,
 }
 
@@ -159,21 +131,20 @@ pub async fn init_jwk(app_state: &AppState) {
     let jwks_coll: Collection<JWKDoc> = mongo_db.collection_with_type(JWKS);
     let jwks_count: i64 = jwks_coll.count_documents(None, None).unwrap();
     trace!("JWKS collection has {} docs", jwks_count);
-    if jwks_count == 0 {
-        match JWK::build() {
-            Ok(jwk) => {
-                let jwk_doc = JWKDoc::build(jwk);
-                match jwks_coll.insert_one(jwk_doc, None) {
-                    Ok(result) => {
-                        info!("Successfully stored JWKDoc");
-                        trace!("Result {:?}", result);
-                    }
-                    Err(e) => {
-                        error!("Error storing JWKDoc {:?}", e);
-                    }
+
+    match JWK::build() {
+        Ok(jwk) => {
+            let jwk_doc = JWKDoc::build(jwk);
+            match jwks_coll.insert_one(jwk_doc, None) {
+                Ok(result) => {
+                    info!("Successfully stored JWKDoc");
+                    trace!("Result {:?}", result);
+                }
+                Err(e) => {
+                    error!("Error storing JWKDoc {:?}", e);
                 }
             }
-            Err(_e) => {}
-        };
-    }
+        }
+        Err(_e) => {}
+    };
 }

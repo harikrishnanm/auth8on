@@ -9,7 +9,6 @@ use actix_web_validator::{error::Error::Validate, JsonConfig};
 use dotenv::dotenv;
 use env_logger::Env;
 use log::{error, info};
-use mongodb::sync::Database;
 use std::thread;
 
 mod config;
@@ -17,6 +16,7 @@ mod constants;
 mod db;
 mod routes;
 mod utils;
+mod schema;
 
 #[derive(Clone, Debug)]
 pub struct AppState {
